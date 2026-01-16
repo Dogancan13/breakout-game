@@ -1,0 +1,78 @@
+body{
+  margin:0;
+  padding:12px;
+  font-family: Arial, sans-serif;
+  background:#0b0f17;
+  color:#e9eefc;
+  text-align:center;
+}
+
+h1{ margin: 10px 0; }
+
+.hud{
+  max-width: 520px;
+  margin: 0 auto 10px auto;
+  display:flex;
+  justify-content: space-between;
+  gap:10px;
+  font-size:14px;
+  opacity:0.95;
+}
+
+.canvas-wrap{
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  position: relative;
+}
+
+canvas{
+  width: 100%;          /* ekranı doldurur */
+  height: auto;         /* oranı korur */
+  background: #111827;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.55);
+  display:block;
+  touch-action: none;   /* mobilde kaydırmayı engeller */
+}
+
+.overlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: rgba(0,0,0,0.55);
+}
+
+.panel{
+  width: 88%;
+  max-width: 420px;
+  background: rgba(255,255,255,0.95);
+  color:#0b0f17;
+  padding: 16px;
+  border-radius: 14px;
+}
+
+.buttons{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+button{
+  padding:10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.15);
+  cursor:pointer;
+  background:white;
+}
+button:hover{ background:#f2f4ff; }
+
+.hint{
+  margin-top:10px;
+  font-size:12px;
+  opacity:0.85;
+}

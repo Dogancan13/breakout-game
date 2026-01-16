@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0b0f17" />
+
+  <title>Breakout</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <h1>Breakout</h1>
+
+  <div class="hud">
+    <div>Skor: <span id="score">0</span></div>
+    <div>Can: <span id="lives">3</span></div>
+    <div>Level: <span id="level">1</span></div>
+    <div>Best: <span id="best">0</span></div>
+  </div>
+
+  <div class="canvas-wrap">
+    <!-- ÖNEMLİ: Canvas hep 500x400 sabit -->
+    <canvas id="gameCanvas" width="500" height="400"></canvas>
+
+    <div id="overlay" class="overlay">
+      <div class="panel">
+        <h2 id="overlayTitle">Breakout</h2>
+        <p id="overlayText">Başlat’a bas veya Enter’a bas. Mobilde sürükle.</p>
+        <div class="buttons">
+          <button id="startBtn">Başlat / Devam</button>
+          <button id="restartBtn">Yeniden Başla</button>
+          <button id="toggleSoundBtn">Ses: Açık</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="hint">PC: ⬅️➡️ | P: Duraklat | Enter: Başlat/Devam — Mobil: Parmağınla sürükle</p>
+
+  <script src="script.js"></script>
+
+  <!-- Offline/PWA -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js");
+    }
+  </script>
+</body>
+</html>
