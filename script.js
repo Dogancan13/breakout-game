@@ -327,10 +327,35 @@ function drawBricks() {
 }
 
 function drawPowerUps() {
-  powerUps.forEach(p => {
-    ctx.fillStyle = "#aa6eff";
+  for (const p of powerUps) {
+    // Kutunun tipi farklı renk olsun
+    let bg = "#aa6eff"; // default
+    if (p.type === "life") bg = "#5fffb0";
+    if (p.type === "expand") bg = "#5aaaff";
+    if (p.type === "multiball") bg = "#ffd166";
+    if (p.type === "speed") bg = "#ff6b6b";
+
+    // Kutu
+    ctx.fillStyle = bg;
     ctx.fillRect(p.x, p.y, p.w, p.h);
-  });
+
+    // Harf
+    const letter =
+      p.type === "life" ? "+" :
+      p.type === "expand" ? "E" :
+      p.type === "multiball" ? "M" :
+      "S";
+
+    ctx.fillStyle = "#0b0f17";     // koyu yazı (açık kutuda görünür)
+    ctx.font = "bold 12px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(letter, p.x + p.w / 2, p.y + p.h / 2);
+  }
+
+  // temizle (başka yerde kullanıyorsan sorun olmaz)
+  ctx.textAlign = "start";
+  ctx.textBaseline = "alphabetic";
 }
 
 /* ===================== COLLISION ===================== */
@@ -435,3 +460,4 @@ function gameLoop() {
 /* ===================== START ===================== */
 resetGame(false);
 gameLoop();
+
