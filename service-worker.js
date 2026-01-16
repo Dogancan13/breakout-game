@@ -1,4 +1,4 @@
-const CACHE_NAME = "breakout-cache-v1";
+const CACHE_NAME = "breakout-cache-v2";
 const FILES = [
   "./",
   "./index.html",
@@ -16,3 +16,4 @@ self.addEventListener("fetch", (e) => {
     caches.match(e.request).then((res) => res || fetch(e.request))
   );
 });
+
