@@ -1,5 +1,7 @@
+/* ===================== CANVAS ===================== */
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+const watchAdBtn = document.getElementById("watchAdBtn");
 
 /* ===================== HUD ===================== */
 const scoreEl = document.getElementById("score");
@@ -23,6 +25,7 @@ const H = canvas.height;  // 400
 let score = 0;
 let lives = 3;
 let level = 1;
+
 let best = Number(localStorage.getItem("bestScore") || 0);
 bestEl.textContent = best;
 
@@ -155,6 +158,7 @@ function spawnPowerUp(x, y) {
 
 function applyPowerUp(type) {
   if (type === "expand") paddle.width = Math.min(paddle.width + 30, 160);
+
   if (type === "multiball") {
     const b = balls[0];
     if (b) {
@@ -162,7 +166,9 @@ function applyPowerUp(type) {
       balls.push(makeBall(b.x, b.y, b.dx * 0.8, -b.dy));
     }
   }
+
   if (type === "speed") balls.forEach(b => { b.dx *= 1.15; b.dy *= 1.15; });
+
   if (type === "life") {
     lives = Math.min(lives + 1, 9);
     livesEl.textContent = lives;
@@ -183,45 +189,14 @@ function updatePowerUps() {
       p.active = false;
       applyPowerUp(p.type);
       spawnParticles(p.x + 9, p.y + 9, 12);
+      beep(520, 0.05);
     }
   });
+
   powerUps = powerUps.filter(p => p.active && p.y < H + 30);
 }
 
-/* ===================== INPUT EVENTS ===================== */
-document.addEventListener("keydown", e => {
-  if (e.key === "ArrowRight") rightPressed = true;
-  if (e.key === "ArrowLeft") leftPressed = true;
-  if (e.key === "Enter") startOrResume();
-  if (e.key.toLowerCase() === "p") togglePause();
-});
-document.addEventListener("keyup", e => {
-  if (e.key === "ArrowRight") rightPressed = false;
-  if (e.key === "ArrowLeft") leftPressed = false;
-});
-
-// Mobil dokunmatik (CSS ölçek -> world)
-canvas.addEventListener("touchstart", handleTouch, { passive: false });
-canvas.addEventListener("touchmove", handleTouch, { passive: false });
-
-function handleTouch(e) {
-  e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = rect.width / W;
-  const x = (e.touches[0].clientX - rect.left) / scaleX;
-  paddle.x = clamp(x - paddle.width / 2, 0, W - paddle.width);
-  if (!isRunning || isPaused) startOrResume();
-}
-
-/* ===================== BUTTONS ===================== */
-startBtn.onclick = startOrResume;
-restartBtn.onclick = () => resetGame(true);
-toggleSoundBtn.onclick = () => {
-  soundOn = !soundOn;
-  toggleSoundBtn.textContent = `Ses: ${soundOn ? "Açık" : "Kapalı"}`;
-};
-
-/* ===================== OVERLAY ===================== */
+/* ===================== OVERLAY HELPERS ===================== */
 function showOverlay(title, text) {
   overlayTitle.textContent = title;
   overlayText.textContent = text;
@@ -233,18 +208,18 @@ function hideOverlay() {
 
 /* ===================== GAME CONTROL ===================== */
 function startOrResume() {
-  if (isGameOver) {
-    resetGame(true);
-    hideOverlay();
-    return;
-  }
+  if (isGameOver) return;
+
+  // oyun devam ederken reklam butonu gözükmesin
+  watchAdBtn.style.display = "none";
+
   if (!isRunning) isRunning = true;
   isPaused = false;
   hideOverlay();
 }
 
 function togglePause() {
-  if (!isRunning) return;
+  if (!isRunning || isGameOver) return;
   isPaused = !isPaused;
   if (isPaused) showOverlay("Duraklatıldı", "Devam için Enter");
   else hideOverlay();
@@ -261,7 +236,7 @@ function resetRound() {
   balls = [makeBall(W / 2, H / 2, speed * dir, -speed)];
 }
 
-function resetGame(hard = false) {
+function resetGame() {
   isGameOver = false;
   score = 0;
   lives = 3;
@@ -277,6 +252,7 @@ function resetGame(hard = false) {
   isRunning = false;
   isPaused = false;
 
+  watchAdBtn.style.display = "none";
   showOverlay("Breakout", "Başlat / Enter ile başla");
 }
 
@@ -289,7 +265,27 @@ function gameOver() {
   isRunning = false;
   isPaused = false;
   isGameOver = true;
-  showOverlay("Game Over", "Enter = Yeniden Başla");
+
+  showOverlay("Game Over", "Reklam izle (+1 Can) | Yeniden Başla");
+  watchAdBtn.style.display = "block";
+
+  watchAdBtn.onclick = async () => {
+    if (!window.Capacitor) {
+      showOverlay("Bilgi", "Reklam sadece Android uygulamada çalışır.");
+      return;
+    }
+
+    showOverlay("Reklam", "Yükleniyor...");
+    const ok = await showRewardedGiveLife();
+
+    if (!ok) {
+      showOverlay("Reklam Yok", "Reklam hazır değil. Biraz sonra tekrar dene.");
+      return;
+    }
+
+    // showRewardedGiveLife() zaten +1 can verip round'u resetliyor
+    watchAdBtn.style.display = "none";
+  };
 }
 
 /* ===================== DRAW ===================== */
@@ -297,19 +293,16 @@ function drawBackground() {
   ctx.fillStyle = "#0b0f17";
   ctx.fillRect(0, 0, W, H);
 }
-
 function drawPaddle() {
   ctx.fillStyle = "#5aaaff";
   ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
 }
-
 function drawBall(b) {
   ctx.beginPath();
   ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
   ctx.fillStyle = "#ff4d4d";
   ctx.fill();
 }
-
 function drawBricks() {
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
@@ -325,35 +318,30 @@ function drawBricks() {
     }
   }
 }
-
 function drawPowerUps() {
   for (const p of powerUps) {
-    // Kutunun tipi farklı renk olsun
-    let bg = "#aa6eff"; // default
+    let bg = "#aa6eff";
     if (p.type === "life") bg = "#5fffb0";
     if (p.type === "expand") bg = "#5aaaff";
     if (p.type === "multiball") bg = "#ffd166";
     if (p.type === "speed") bg = "#ff6b6b";
 
-    // Kutu
     ctx.fillStyle = bg;
     ctx.fillRect(p.x, p.y, p.w, p.h);
 
-    // Harf
     const letter =
       p.type === "life" ? "+" :
       p.type === "expand" ? "E" :
       p.type === "multiball" ? "M" :
       "S";
 
-    ctx.fillStyle = "#0b0f17";     // koyu yazı (açık kutuda görünür)
+    ctx.fillStyle = "#0b0f17";
     ctx.font = "bold 12px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(letter, p.x + p.w / 2, p.y + p.h / 2);
   }
 
-  // temizle (başka yerde kullanıyorsan sorun olmaz)
   ctx.textAlign = "start";
   ctx.textBaseline = "alphabetic";
 }
@@ -373,6 +361,8 @@ function resolveBrickHit(ball, br) {
   score += 10;
   scoreEl.textContent = score;
   spawnParticles(ball.x, ball.y, 10);
+  beep(300, 0.03);
+
   if (br.hp === 0) spawnPowerUp(br.x + brickWidth / 2 - 9, br.y + brickHeight / 2 - 9);
 }
 
@@ -385,11 +375,163 @@ function paddleBounce(ball) {
   ) {
     ball.dy = -Math.abs(ball.dy);
     spawnParticles(ball.x, paddle.y, 6);
+    beep(220, 0.02);
   }
 }
 
+/* ===================== REWARDED (ADMOB) ===================== */
+let AdMob = null;
+
+const REWARDED_ID = "ca-app-pub-1048442126897780/2160501071";
+const INTERSTITIAL_ID = "ca-app-pub-1048442126897780/4807679861";
+
+let adsInit = false;
+let rewardReady = false;
+
+let interstitialReady = false;
+let lastInterstitialAt = 0;
+const INTERSTITIAL_COOLDOWN_MS = 90_000;
+
+async function initAds() {
+  try {
+    if (!window.Capacitor) return;
+    AdMob = window.Capacitor.Plugins.AdMob;
+    if (!AdMob) return;
+
+    await AdMob.initialize({
+      requestTrackingAuthorization: true,
+      initializeForTesting: false,
+    });
+
+    adsInit = true;
+    await prepareRewarded();
+    await prepareInterstitial();
+  } catch (e) {
+    console.log("initAds error:", e);
+  }
+}
+
+async function prepareRewarded() {
+  if (!adsInit) return;
+  try {
+    await AdMob.prepareRewardVideoAd({ adId: REWARDED_ID });
+    rewardReady = true;
+  } catch (e) {
+    console.log("prepareRewarded error:", e);
+    rewardReady = false;
+  }
+}
+
+async function showRewardedGiveLife() {
+  if (!adsInit) return false;
+
+  try {
+    if (!rewardReady) await prepareRewarded();
+
+    const rewardItem = await AdMob.showRewardVideoAd();
+
+    if (rewardItem) {
+      lives = Math.min(lives + 1, 9);
+      livesEl.textContent = lives;
+
+      isGameOver = false;
+      resetRound();
+      isPaused = true;
+      showOverlay("1 Can Kazandın!", "Devam için Başlat/Enter");
+
+      rewardReady = false;
+      prepareRewarded();
+      return true;
+    }
+
+    return false;
+  } catch (e) {
+    console.log("showRewarded error:", e);
+    rewardReady = false;
+    prepareRewarded();
+    return false;
+  }
+}
+
+async function prepareInterstitial() {
+  if (!adsInit) return;
+  try {
+    await AdMob.prepareInterstitial({ adId: INTERSTITIAL_ID });
+    interstitialReady = true;
+  } catch (e) {
+    console.log("prepareInterstitial error:", e);
+    interstitialReady = false;
+  }
+}
+
+async function showInterstitialSmart() {
+  if (!adsInit) return false;
+
+  const now = Date.now();
+  if (now - lastInterstitialAt < INTERSTITIAL_COOLDOWN_MS) return false;
+
+  try {
+    if (!interstitialReady) await prepareInterstitial();
+
+    await AdMob.showInterstitial();
+    lastInterstitialAt = now;
+
+    interstitialReady = false;
+    prepareInterstitial();
+    return true;
+  } catch (e) {
+    console.log("showInterstitial error:", e);
+    interstitialReady = false;
+    prepareInterstitial();
+    return false;
+  }
+}
+
+/* ===================== INPUT EVENTS ===================== */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowRight") rightPressed = true;
+  if (e.key === "ArrowLeft") leftPressed = true;
+
+  if (e.key === "Enter") startOrResume();
+  if (e.key.toLowerCase() === "p") togglePause();
+
+  // PC için R desteği (mobilde buton var)
+  if (e.key.toLowerCase() === "r" && isGameOver) {
+    watchAdBtn.click();
+  }
+});
+
+document.addEventListener("keyup", (e) => {
+  if (e.key === "ArrowRight") rightPressed = false;
+  if (e.key === "ArrowLeft") leftPressed = false;
+});
+
+// Mobil dokunmatik
+canvas.addEventListener("touchstart", handleTouch, { passive: false });
+canvas.addEventListener("touchmove", handleTouch, { passive: false });
+
+function handleTouch(e) {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = rect.width / W;
+  const x = (e.touches[0].clientX - rect.left) / scaleX;
+  paddle.x = clamp(x - paddle.width / 2, 0, W - paddle.width);
+  if (!isRunning || isPaused) startOrResume();
+}
+
+/* ===================== BUTTONS ===================== */
+startBtn.onclick = startOrResume;
+restartBtn.onclick = () => {
+  watchAdBtn.style.display = "none";
+  resetGame();
+};
+toggleSoundBtn.onclick = () => {
+  soundOn = !soundOn;
+  toggleSoundBtn.textContent = `Ses: ${soundOn ? "Açık" : "Kapalı"}`;
+};
+
 /* ===================== MAIN LOOP ===================== */
-function gameLoop() {
+async function gameLoop() {
   drawBackground();
   drawBricks();
   drawPowerUps();
@@ -398,7 +540,7 @@ function gameLoop() {
   updateParticles();
   drawParticles();
 
-  if (!isRunning || isPaused) {
+  if (!isRunning || isPaused || isGameOver) {
     requestAnimationFrame(gameLoop);
     return;
   }
@@ -428,6 +570,7 @@ function gameLoop() {
           }
         }
       }
+
       paddleBounce(b);
     }
 
@@ -437,8 +580,11 @@ function gameLoop() {
   if (balls.length === 0) {
     lives--;
     livesEl.textContent = lives;
-    if (lives <= 0) gameOver();
-    else {
+    beep(180, 0.10);
+
+    if (lives <= 0) {
+      gameOver();
+    } else {
       resetRound();
       isPaused = true;
       showOverlay("Can gitti!", "Enter ile devam");
@@ -448,6 +594,12 @@ function gameLoop() {
   if (bricksRemaining() === 0) {
     level++;
     levelEl.textContent = level;
+
+    // her 3 levelde 1 interstitial (3,6,9...)
+    if (level % 3 === 0) {
+      await showInterstitialSmart();
+    }
+
     createBricksForLevel();
     resetRound();
     isPaused = true;
@@ -458,6 +610,6 @@ function gameLoop() {
 }
 
 /* ===================== START ===================== */
-resetGame(false);
+resetGame();
 gameLoop();
-
+initAds();
