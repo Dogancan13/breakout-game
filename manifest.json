@@ -2,9 +2,11 @@
   "name": "Breakout Game",
   "short_name": "Breakout",
   "description": "Classic breakout arcade game built as a Progressive Web App",
+  "id": "/breakout-game",
   "start_url": "/breakout-game/",
   "scope": "/breakout-game/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0b0f17",
   "theme_color": "#0b0f17",
   "icons": [
