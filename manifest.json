@@ -2,19 +2,20 @@
   "name": "Breakout Game",
   "short_name": "Breakout",
   "description": "Classic breakout arcade game built as a Progressive Web App",
-  "start_url": "./",
+  "start_url": "/breakout-game/",
+  "scope": "/breakout-game/",
   "display": "standalone",
   "background_color": "#0b0f17",
   "theme_color": "#0b0f17",
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/Dogancan13/breakout-game/main/icons/icon-512.png",
+      "src": "https://dogancan13.github.io/breakout-game/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://raw.githubusercontent.com/Dogancan13/breakout-game/main/icons/icon-maskable.png",
+      "src": "https://dogancan13.github.io/breakout-game/icons/icon-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
